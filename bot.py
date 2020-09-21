@@ -9,7 +9,7 @@ from json import load as jsload
 from os.path import abspath, dirname, join
 import requests
 import lxml.html
-
+import secret
 
 
 with open(join(dirname(abspath(__file__)), "settings.json")) as settings_file:
@@ -42,28 +42,40 @@ def reply(msg):
     global maintenance
     global html
     global doc
+    global secret
 
     try:
         text = msg['text']
     except ValueError:
         text = ""
     
-    command = getCommand(text)
+    command = getCommand(text).lower()
 
     if not maintenance:
         if command == "/dona":
-            bot.sendMessage(chatId, "Ecco qui il mio link PayPal, Grazie mille! \n"
+            bot.sendMessage(chatId, "Ecco qui il mio link PayPal, Grazie mille! ❤️\n"
                                     "https://www.paypal.me/wapeetyofficial")
+        
+        elif command == secret.getSecretCommand():
+            bot.sendMessage(chatId, secret.getSecretMessage(), parse_mode="HTML")
+            print("Comando Segreto Attivato")
+
+        elif command == "/source":
+            bot.sendMessage(chatId, "Ecco qui il link Github, Aggiungi una stellina! 😘\n"
+                                    "https://github.com/WAPEETY/santodelgiornobot")
 
         elif command == "/start":
-            bot.sendMessage(chatId, "Benvenuto \n"
+            bot.sendMessage(chatId, "Benvenuto ❗️\n"
                                     "Prima di iniziare ci tengo a dire che questo bot <b>NON</b> manda le notifiche in automatico, \n"
                                     "dovrai essere tu a richiedere il santo del giorno tramite: \n\n" 
-                                    "<code>/santo</code>\n\n"
+                                    "/santo\n\n"
                                     "Se invece vuoi specificare un giorno basterá aggiungere la data in formato: \n\n" 
                                     "<code>gg/mm</code>\n\n"
                                     "avendo cura di anteporre uno zero per i mesi e i giorni con una sola cifra, ad esempio:\n\n"
-                                    "<code>02/01</code>", parse_mode="HTML")
+                                    "<code>02/01</code>\n\n"
+                                    "✨ <b>Novita!</b> ✨\n"
+                                    "<i>Sapevi che questo bot funziona anche inline?</i> 😍\n\n"
+                                    "Vai in una qualsiasi chat e scrivi @wap_sdgbot con la data e scopri la sorpresa 🤩", parse_mode="HTML")
         
         elif command == "/santo":
 
@@ -83,12 +95,13 @@ def reply(msg):
             santo[0] = getNomeSanto()
             santo[1] = getTipoSanto()
             santo[2] = getImgSanto()
+
             bot.sendMessage(chatId, "<b>" + santo[0] + ":</b> \n <i>" + santo[1] + "</i>\n\n" + "<a href='" + santo[2] + "'> link alla foto </a>", parse_mode="HTML")
 
         else:
-            bot.sendMessage(chatId, "Comando non riconosciuto")
+            bot.sendMessage(chatId, "Comando non riconosciuto ☹️")
     else:
-        bot.sendMessage(chatId, "<b>Bot Attualmente in manutenzione.</b> \n"
+        bot.sendMessage(chatId, "⚠️ <b>Bot Attualmente in manutenzione.</b> ⚠️\n"
                                 "<i>Ci scusiamo per il disagio.</i>", parse_mode="HTML")
 
 def getNomeSanto():
@@ -106,11 +119,11 @@ def getImgSanto():
 def Truncate(content, sel):
     if sel == 0:
         output = content[0:2]
-        if(content[3:] == "02" and int(output) <= 29):
+        if(content[3:] == "02" and int(output) <= 29 and int(output) > 0):
             return output
-        elif(content[3:] == "01" or content[3:] == "03" or content[3:] == "05" or content[3:] == "07" or content[3:] == "08" or content[3:] == "10" or content[3:] == "12" and int(output) <= 31):
+        elif(content[3:] == "01" or content[3:] == "03" or content[3:] == "05" or content[3:] == "07" or content[3:] == "08" or content[3:] == "10" or content[3:] == "12" and int(output) <= 31 and int(output) > 0):
             return output
-        elif(content[3:] == "04" or content[3:] == "06" or content[3:] == "09" or content[3:] == "11" and int(output) <= 30):
+        elif(content[3:] == "04" or content[3:] == "06" or content[3:] == "09" or content[3:] == "11" and int(output) <= 30 and int(output) > 0):
             return output
         else:
             return "01"
@@ -162,42 +175,56 @@ def on_inline_query(msg):
 
     global html
     global doc
+    global maintenance
 
-    if(len(query_string) ==  5):
-        giorno = Truncate(query_string, 0)
-        mese = Truncate(query_string, 1)
-        print(giorno + "/" + mese)
+    if not maintenance:
 
-        html = requests.get('https://www.santodelgiorno.it/' + giorno + "/" + mese)
-        doc = lxml.html.fromstring(html.content)
+        if(len(query_string) ==  5):
+            giorno = Truncate(query_string, 0)
+            mese = Truncate(query_string, 1)
+            print(giorno + "/" + mese)
 
+            html = requests.get('https://www.santodelgiorno.it/' + giorno + "/" + mese)
+            doc = lxml.html.fromstring(html.content)
+
+            articles = [InlineQueryResultArticle(
+                            id='Santo del giorno',
+                            title= getNomeSanto(),
+                            description= getTipoSanto(),
+                            thumb_url= getImgSanto(),
+                            input_message_content=InputTextMessageContent(
+                                message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
+                                parse_mode="HTML"
+                            )
+                        )]
+
+        else:    
+            html = requests.get('https://www.santodelgiorno.it/')
+            doc = lxml.html.fromstring(html.content)
+
+            articles = [InlineQueryResultArticle(
+                            id='Santo del giorno',
+                            title= getNomeSanto(),
+                            description= getTipoSanto(),
+                            thumb_url= getImgSanto(),
+                            input_message_content=InputTextMessageContent(
+                                message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
+                                parse_mode="HTML"
+                            )
+                        )]
+
+        bot.answerInlineQuery(query_id, articles)
+
+    else:
         articles = [InlineQueryResultArticle(
                         id='Santo del giorno',
-                        title= getNomeSanto(),
-                        description= getTipoSanto(),
-                        thumb_url= getImgSanto(),
+                        title= "⚠️ Bot in Manutenzione ⚠️",
+                        description= "Ci scusiamo per il disagio",
                         input_message_content=InputTextMessageContent(
-                            message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
+                            message_text="⚠️ <b>Bot Attualmente in manutenzione.</b> ⚠️ \n\n <i>Ci scusiamo per il disagio.</i>",
                             parse_mode="HTML"
                         )
                     )]
-
-    else:    
-        html = requests.get('https://www.santodelgiorno.it/')
-        doc = lxml.html.fromstring(html.content)
-
-        articles = [InlineQueryResultArticle(
-                        id='Santo del giorno',
-                        title= getNomeSanto(),
-                        description= getTipoSanto(),
-                        thumb_url= getImgSanto(),
-                        input_message_content=InputTextMessageContent(
-                            message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
-                            parse_mode="HTML"
-                        )
-                    )]
-
-    bot.answerInlineQuery(query_id, articles)
 
 bot.message_loop({'chat': reply, 'inline_query': on_inline_query})
 while True:
