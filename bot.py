@@ -2,6 +2,7 @@ from time import sleep
 import telepotpro
 from telepotpro import Bot, glance
 from telepotpro.exception import TelegramError, BotWasBlockedError
+from telepotpro.namedtuple import InlineQueryResultArticle, InlineQueryResultPhoto, InputTextMessageContent
 from threading import Thread
 from datetime import datetime, timedelta
 from json import load as jsload
@@ -105,7 +106,14 @@ def getImgSanto():
 def Truncate(content, sel):
     if sel == 0:
         output = content[0:2]
-        return output
+        if(content[3:] == "02" and int(output) <= 29):
+            return output
+        elif(content[3:] == "01" or content[3:] == "03" or content[3:] == "05" or content[3:] == "07" or content[3:] == "08" or content[3:] == "10" or content[3:] == "12" and int(output) <= 31):
+            return output
+        elif(content[3:] == "04" or content[3:] == "06" or content[3:] == "09" or content[3:] == "11" and int(output) <= 30):
+            return output
+        else:
+            return "01"
     else:
         code = content[3:]
         print(code)
@@ -148,6 +156,49 @@ def getCommand(content):
         
     return output
 
-bot.message_loop({'chat': reply})
+def on_inline_query(msg):
+    query_id, from_id, query_string = telepotpro.glance(msg, flavor='inline_query')
+    print ('Inline Query:', query_id, from_id, query_string)
+
+    global html
+    global doc
+
+    if(len(query_string) ==  5):
+        giorno = Truncate(query_string, 0)
+        mese = Truncate(query_string, 1)
+        print(giorno + "/" + mese)
+
+        html = requests.get('https://www.santodelgiorno.it/' + giorno + "/" + mese)
+        doc = lxml.html.fromstring(html.content)
+
+        articles = [InlineQueryResultArticle(
+                        id='Santo del giorno',
+                        title= getNomeSanto(),
+                        description= getTipoSanto(),
+                        thumb_url= getImgSanto(),
+                        input_message_content=InputTextMessageContent(
+                            message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
+                            parse_mode="HTML"
+                        )
+                    )]
+
+    else:    
+        html = requests.get('https://www.santodelgiorno.it/')
+        doc = lxml.html.fromstring(html.content)
+
+        articles = [InlineQueryResultArticle(
+                        id='Santo del giorno',
+                        title= getNomeSanto(),
+                        description= getTipoSanto(),
+                        thumb_url= getImgSanto(),
+                        input_message_content=InputTextMessageContent(
+                            message_text="<b>" + getNomeSanto() + "</b> \n <i>" + getTipoSanto() + "</i>\n\n" + "<a href='" + getImgSanto() + "'> link alla foto </a>",
+                            parse_mode="HTML"
+                        )
+                    )]
+
+    bot.answerInlineQuery(query_id, articles)
+
+bot.message_loop({'chat': reply, 'inline_query': on_inline_query})
 while True:
     sleep(60)
