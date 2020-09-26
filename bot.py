@@ -24,7 +24,11 @@ fullDate = ""
 xpaths = {
     "nomeSanto":    '//*[@id="CenterDiv"]/div[2]/div[1]/div[1]',
     "tipoSanto":    '//*[@id="CenterDiv"]/div[2]/div[1]/div[2]',
-    "imgSanto":     '//*[@id="CenterDiv"]/div[2]/img'
+    "imgSanto":     '//*[@id="CenterDiv"]/div[2]/img',
+    "linkSanto":    '//*[@id="CenterDiv"]/div[2]/div[1]/div[3]/div/a',
+    "ricorrenza":   '//*[@id="CenterDiv"]/div[2]/div[4]/b/a',
+    "tipoFesta":    '//*[@id="CenterDiv"]/div[2]/div[5]/b',
+    "protetti":     '//*[@id="CenterDiv"]/div[2]/div[6]/span[2]'
 }
 
 if not maintenance:
@@ -36,7 +40,7 @@ html = requests.get('https://www.santodelgiorno.it/')
 doc = lxml.html.fromstring(html.content)
 
 def reply(msg):
-    santo = ["nome","tipo","img"]
+    santo = ["nome","tipo","img","link","ricorrenza","tipoFesta","protetti"]
     chatId = msg['chat']['id']
     name = msg['from']['first_name']
     global maintenance
@@ -55,6 +59,7 @@ def reply(msg):
         if command == "/dona":
             bot.sendMessage(chatId, "Ecco qui il mio link PayPal, Grazie mille! ❤️\n"
                                     "https://www.paypal.me/wapeetyofficial")
+            bot.sendVideo(chatId, open('img/jesoo.mp4', 'rb'))
         
         elif command == secret.getSecretCommand():
             bot.sendMessage(chatId, secret.getSecretMessage(), parse_mode="HTML")
@@ -95,8 +100,12 @@ def reply(msg):
             santo[0] = getNomeSanto()
             santo[1] = getTipoSanto()
             santo[2] = getImgSanto()
+            santo[3] = getLinkSanto()
+            santo[4] = getRicorrenza(santo[3])
+            santo[5] = getTipologia(santo[3])
+            santo[6] = getProtetti(santo[3])
 
-            bot.sendMessage(chatId, "<b>" + santo[0] + ":</b> \n <i>" + santo[1] + "</i>\n\n" + "<a href='" + santo[2] + "'> link alla foto </a>", parse_mode="HTML")
+            bot.sendMessage(chatId, "<b>" + santo[0] + ":</b> \n <i>" + santo[1] + "</i>\n\n" + "<b>Ricorrenza:</b> " + " <i>" + santo[4] + "</i>\n" + "<b>Tipo Festa:</b> " + " <i>" + santo[5] + "</i>\n" + "<b>Protetti:</b> " + " <i>" + santo[6] + "</i>\n" + "\n\n" + "<a href='" + santo[2] + "'> link alla foto </a>", parse_mode="HTML")
 
         else:
             bot.sendMessage(chatId, "Comando non riconosciuto ☹️")
@@ -113,8 +122,30 @@ def getTipoSanto():
     return tipoSanto.text_content()
 
 def getImgSanto():
-    pathSanto =  doc.xpath(xpaths['imgSanto'])[0]
-    return "https://www.santodelgiorno.it" + pathSanto.attrib['src']
+    pathimgSanto =  doc.xpath(xpaths['imgSanto'])[0]
+    return "https://www.santodelgiorno.it" + pathimgSanto.attrib['src']
+
+def getLinkSanto():
+    linkSanto =  doc.xpath(xpaths['linkSanto'])[0]
+    return "https://www.santodelgiorno.it" + linkSanto.attrib['href']
+
+def getRicorrenza(linkSanto):
+    html = requests.get(linkSanto)
+    doc = lxml.html.fromstring(html.content)
+    ricorrenza =  doc.xpath(xpaths['ricorrenza'])[0]
+    return ricorrenza.text_content()
+
+def getTipologia(linkSanto):
+    html = requests.get(linkSanto)
+    doc = lxml.html.fromstring(html.content)
+    ricorrenza =  doc.xpath(xpaths['tipoFesta'])[0]
+    return ricorrenza.text_content()
+
+def getProtetti(linkSanto):
+    html = requests.get(linkSanto)
+    doc = lxml.html.fromstring(html.content)
+    ricorrenza =  doc.xpath(xpaths['protetti'])[0]
+    return ricorrenza.text_content()
 
 def Truncate(content, sel):
     if sel == 0:
