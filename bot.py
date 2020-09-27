@@ -104,8 +104,12 @@ def reply(msg):
             santo[4] = getRicorrenza(santo[3])
             santo[5] = getTipologia(santo[3])
             santo[6] = getProtetti(santo[3])
+            
 
             bot.sendMessage(chatId, "<b>" + santo[0] + ":</b> \n <i>" + santo[1] + "</i>\n\n" + "<b>Ricorrenza:</b> " + " <i>" + santo[4] + "</i>\n" + "<b>Tipo Festa:</b> " + " <i>" + santo[5] + "</i>\n" + "<b>Protetti:</b> " + " <i>" + santo[6] + "</i>\n" + "\n\n" + "<a href='" + santo[2] + "'> link alla foto </a>", parse_mode="HTML")
+            bot.sendMessage(chatId, "<b>I dati potrebbero essere sbagliati</b>,\n"
+                                    "ho contattato personalmente gli autori del sito da cui prendo i dati"
+                                    "tutti i nuovi aggiornamenti a t.me/sdgupdates", parse_mode="HTML")
 
         else:
             bot.sendMessage(chatId, "Comando non riconosciuto ☹️")
@@ -132,20 +136,29 @@ def getLinkSanto():
 def getRicorrenza(linkSanto):
     html = requests.get(linkSanto)
     doc = lxml.html.fromstring(html.content)
-    ricorrenza =  doc.xpath(xpaths['ricorrenza'])[0]
-    return ricorrenza.text_content()
+    try:
+        ricorrenza =  doc.xpath(xpaths['ricorrenza'])[0]
+        return ricorrenza.text_content()
+    except IndexError:
+        return ""
 
 def getTipologia(linkSanto):
     html = requests.get(linkSanto)
     doc = lxml.html.fromstring(html.content)
-    ricorrenza =  doc.xpath(xpaths['tipoFesta'])[0]
-    return ricorrenza.text_content()
+    try:
+        tipo =  doc.xpath(xpaths['tipoFesta'])[0]
+        return tipo.text_content()
+    except IndexError:
+        return ""
 
 def getProtetti(linkSanto):
     html = requests.get(linkSanto)
     doc = lxml.html.fromstring(html.content)
-    ricorrenza =  doc.xpath(xpaths['protetti'])[0]
-    return ricorrenza.text_content()
+    try:
+        protetti =  doc.xpath(xpaths['protetti'])[0]
+        return protetti.text_content()
+    except IndexError:
+        return ""
 
 def Truncate(content, sel):
     if sel == 0:
